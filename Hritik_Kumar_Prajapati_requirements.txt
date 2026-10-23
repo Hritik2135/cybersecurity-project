@@ -1,0 +1,25 @@
+# =============================================================================
+#  Mini-SIEM Lab — Python Dependencies
+# =============================================================================
+#
+#  Install all dependencies with:
+#      pip install -r requirements.txt
+#
+#  Python 3.9 or higher is required (3.11+ recommended).
+#
+#  NOTE: pandas and pyarrow are intentionally NOT listed here.
+#        All Plotly charts use plotly.graph_objects directly,
+#        which accepts raw Python lists with no native DLL dependencies.
+#
+#  Built-in stdlib modules used (no install needed):
+#      sqlite3, random, re, threading, time, datetime, pathlib, typing
+# =============================================================================
+
+# Web dashboard UI framework
+streamlit>=1.66.0
+
+# Interactive charts (graph_objects only — no pandas required)
+plotly>=7.1.0
+
+# Realistic fake usernames and data for log simulation
+faker>=19.0.0

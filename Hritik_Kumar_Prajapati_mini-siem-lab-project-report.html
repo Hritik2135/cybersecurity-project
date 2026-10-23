@@ -1,0 +1,733 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mini-SIEM Lab — Project Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #1f2328;
+    background: #ffffff;
+  }
+
+  /* ── Cover page ── */
+  .cover {
+    background: #0d1117;
+    color: #ffffff;
+    min-height: 280px;
+    padding: 56px 60px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cover .badge {
+    display: inline-block;
+    background: #e63946;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 18px;
+  }
+  .cover h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .cover .subtitle {
+    font-size: 1rem;
+    color: #8b949e;
+    margin-bottom: 32px;
+  }
+  .cover-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px 32px;
+    border-top: 1px solid #30363d;
+    padding-top: 24px;
+    margin-top: auto;
+  }
+  .cover-meta div { font-size: 12px; color: #8b949e; }
+  .cover-meta strong { display: block; color: #e6edf3; font-size: 13px; margin-bottom: 2px; }
+
+  /* ── Body layout ── */
+  .body { max-width: 820px; margin: 0 auto; padding: 40px 36px 60px; }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2328;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 6px;
+    margin: 40px 0 16px;
+  }
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2328;
+    margin: 24px 0 8px;
+  }
+  h4 {
+    font-size: .9rem;
+    font-weight: 700;
+    color: #57606a;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: 18px 0 6px;
+  }
+
+  p { margin-bottom: 12px; color: #24292f; }
+
+  /* ── Callout / info boxes ── */
+  .callout {
+    border-left: 4px solid #3b82d4;
+    background: #f0f6ff;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  .callout.warn  { border-color: #e9c46a; background: #fffbeb; }
+  .callout.crit  { border-color: #e63946; background: #fff0f0; }
+  .callout.good  { border-color: #2a9d8f; background: #f0fdf9; }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0 24px;
+  }
+  thead th {
+    background: #1e2a3a;
+    color: #ffffff;
+    text-align: left;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) { background: #f7f8fa; }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  code {
+    font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+    font-size: 12px;
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #c7254e;
+  }
+
+  /* ── Severity badges ── */
+  .sev {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #fff;
+    letter-spacing: .04em;
+  }
+  .sev-CRITICAL { background: #e63946; }
+  .sev-HIGH     { background: #f4a261; }
+  .sev-MEDIUM   { background: #c9912a; }
+  .sev-LOW      { background: #2a9d8f; }
+  .sev-INFO     { background: #457b9d; }
+
+  /* ── Architecture diagram (pure CSS/SVG) ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0 28px;
+  }
+  .arch-box {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: #f7f8fa;
+  }
+  .arch-box .icon { font-size: 22px; margin-bottom: 6px; }
+  .arch-box h4 { margin: 0 0 4px; font-size: 12px; color: #1f2328; text-transform: none; letter-spacing: 0; }
+  .arch-box p  { font-size: 11.5px; color: #57606a; margin: 0; }
+
+  /* ── Layer diagram ── */
+  .layers { margin: 20px 0 28px; }
+  .layer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .layer-1 { background: #0d1117; color: #e6edf3; }
+  .layer-2 { background: #1e2a3a; color: #cdd9e5; }
+  .layer-3 { background: #2a3f5a; color: #cdd9e5; }
+  .layer-4 { background: #3b5070; color: #e6edf3; }
+  .layer span { font-size: 11px; font-weight: 400; opacity: .8; margin-left: auto; }
+
+  /* ── Test results ── */
+  .test-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+  }
+  .test-row:last-child { border-bottom: none; }
+  .test-pass { color: #2a9d8f; font-weight: 700; font-size: 15px; }
+  .test-num  { color: #57606a; font-size: 11px; min-width: 24px; }
+
+  /* ── KPI grid ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin: 16px 0 24px;
+  }
+  .kpi {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+    background: #f7f8fa;
+  }
+  .kpi .num { font-size: 1.6rem; font-weight: 800; color: #1f2328; line-height: 1.1; }
+  .kpi .lbl { font-size: 11px; color: #57606a; margin-top: 4px; }
+
+  /* ── Page flow diagram ── */
+  .pages-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 16px 0 24px;
+  }
+  .page-card {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: #f7f8fa;
+    font-size: 13px;
+  }
+  .page-card .pg-icon { font-size: 18px; margin-bottom: 4px; }
+  .page-card .pg-name { font-weight: 700; color: #1f2328; margin-bottom: 3px; }
+  .page-card .pg-desc { font-size: 12px; color: #57606a; }
+
+  ul { padding-left: 20px; margin-bottom: 12px; }
+  ul li { margin-bottom: 5px; font-size: 13.5px; color: #24292f; }
+
+  .toc { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px 22px; margin: 24px 0 32px; }
+  .toc h4 { margin: 0 0 10px; font-size: 11px; color: #57606a; }
+  .toc ol { padding-left: 18px; margin: 0; }
+  .toc li { font-size: 13px; color: #3b82d4; margin-bottom: 4px; }
+
+  .footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 12px;
+    color: #8b949e;
+  }
+</style>
+</head>
+<body>
+
+
+<div class="cover">
+  <div class="badge">Project Report — Cybersecurity</div>
+  <h1>Mini-SIEM Lab</h1>
+  <div class="subtitle">
+    A single-file Python Security Information &amp; Event Management simulator<br />
+    inspired by Wazuh SIEM cluster log aggregation and alert dashboards
+  </div>
+  <div class="cover-meta">
+    <div><strong>Prepared By</strong>Hritik Kumar Prajapati</div>
+    <div><strong>Project Type</strong>Python Application (Single File)</div>
+    <div><strong>Domain</strong>Cybersecurity / SOC Operations</div>
+    <div><strong>Language</strong>Python 3.9+</div>
+    <div><strong>Framework</strong>Streamlit + Plotly + SQLite</div>
+    <div><strong>Total Lines</strong>~2,031 (fully commented)</div>
+    <div><strong>Alert Rules</strong>12 rules, MITRE ATT&amp;CK mapped</div>
+    <div><strong>Test Cases</strong>10 / 10 Passed</div>
+    <div><strong>File</strong><code style="color:#58a6ff;background:none">Hritik_Kumar_Prajapati_mini_siem.py</code></div>
+  </div>
+</div>
+
+
+<div class="body">
+
+  
+  <div class="toc">
+    <h4>TABLE OF CONTENTS</h4>
+    <ol>
+      <li>Introduction &amp; Motivation</li>
+      <li>Objectives</li>
+      <li>System Architecture</li>
+      <li>Technology Stack</li>
+      <li>Core Modules &amp; Implementation</li>
+      <li>Alert Rules Engine &amp; MITRE ATT&amp;CK Mapping</li>
+      <li>Dashboard Pages</li>
+      <li>Live Mode &amp; Background Thread</li>
+      <li>Database Design</li>
+      <li>Testing &amp; Validation</li>
+      <li>Known Limitations &amp; Future Work</li>
+      <li>How to Run</li>
+      <li>Conclusion</li>
+    </ol>
+  </div>
+
+
+  
+  <h2>1. Introduction &amp; Motivation</h2>
+  <p>
+    Security Information and Event Management (SIEM) systems are a cornerstone of modern
+    Security Operations Centre (SOC) practice. Tools like <strong>Wazuh</strong>, Splunk,
+    and IBM QRadar aggregate logs from hundreds of sources, correlate events against
+    threat intelligence, and surface actionable alerts to security analysts.
+  </p>
+  <p>
+    Understanding how a SIEM works internally — from raw log ingestion through rule
+    correlation to a live analyst dashboard — is critical for any cybersecurity engineer.
+    However, enterprise SIEM platforms are complex, expensive, and require significant
+    infrastructure to operate.
+  </p>
+  <p>
+    <strong>Mini-SIEM Lab</strong> was built to fill this gap: a fully self-contained,
+    single-file Python application that demonstrates every layer of a real SIEM — log
+    simulation, SQLite-backed aggregation, a regex-based correlation engine with stateful
+    threshold rules, and a professional interactive dashboard — with zero external services
+    and a three-package install.
+  </p>
+  <div class="callout good">
+    The project is intentionally single-file (<code>Hritik_Kumar_Prajapati_mini_siem.py</code>, ~2,031 lines)
+    so the entire implementation can be read, reviewed, and understood in one sitting — a
+    design goal aligned with cybersecurity education and code auditability.
+  </div>
+
+
+  
+  <h2>2. Objectives</h2>
+  <ul>
+    <li>Simulate realistic system log sources: SSH daemon, Apache web server, iptables firewall, sudo, useradd, and Linux Audit daemon (auditd).</li>
+    <li>Aggregate and persist all generated logs in a local SQLite database with proper indexing.</li>
+    <li>Implement a custom alert rules correlation engine with both <em>stateless</em> (regex match) and <em>stateful</em> (threshold-based) rules.</li>
+    <li>Map all detection rules to MITRE ATT&amp;CK technique IDs for real-world threat context.</li>
+    <li>Build a professional, multi-page Streamlit dashboard displaying KPI metrics, live alert tables categorized by severity, event timeline charts, attacker intelligence, and analyst triage controls.</li>
+    <li>Implement a background daemon thread for continuous log simulation with an auto-refresh UI (Live Mode).</li>
+    <li>Ensure the entire application runs with only three pip packages and no native compiled dependencies.</li>
+  </ul>
+
+
+  
+  <h2>3. System Architecture</h2>
+
+  <div class="layers">
+    <div class="layer layer-1">🖥️  Presentation Layer — Streamlit UI (7 pages) <span>port 8501</span></div>
+    <div class="layer layer-2">🔔  Correlation Engine — 12 alert rules, regex + stateful threshold</div>
+    <div class="layer layer-3">📥  Ingestion Layer — simulate_logs() → ingest_logs() → _run_rules()</div>
+    <div class="layer layer-4">🗄️  Storage Layer — SQLite (WAL mode) · logs · alerts · agents tables</div>
+  </div>
+
+  <p>The four-layer stack maps cleanly to a real SIEM architecture:</p>
+
+  <table>
+    <thead><tr><th>Layer</th><th>Mini-SIEM Component</th><th>Real-SIEM Equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>Data Collection</td><td><code>_gen_ssh()</code>, <code>_gen_apache()</code>, <code>_gen_fileaccess()</code> …</td><td>Wazuh Agent / Syslog forwarder</td></tr>
+      <tr><td>Aggregation &amp; Storage</td><td><code>ingest_logs()</code> → SQLite WAL</td><td>Elasticsearch / OpenSearch index</td></tr>
+      <tr><td>Correlation Engine</td><td><code>_run_rules()</code> + <code>_record_ssh_fail()</code></td><td>Wazuh Ruleset / Sigma rules</td></tr>
+      <tr><td>Dashboard</td><td>Streamlit pages + Plotly charts</td><td>Kibana / Wazuh Dashboard</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Component Breakdown</h3>
+  <div class="arch-grid">
+    <div class="arch-box">
+      <div class="icon">🔄</div>
+      <h4>Background Thread</h4>
+      <p>Daemon thread ingests 15 logs every 10 s; thread-safe with <code>threading.Lock</code></p>
+    </div>
+    <div class="arch-box">
+      <div class="icon">📋</div>
+      <h4>Rules Engine</h4>
+      <p>12 rules evaluated on each log; stateful brute-force uses rolling time window</p>
+    </div>
+    <div class="arch-box">
+      <div class="icon">🗄️</div>
+      <h4>SQLite Database</h4>
+      <p>3 tables (logs, alerts, agents), 7 indexes, WAL journal for concurrency</p>
+    </div>
+    <div class="arch-box">
+      <div class="icon">🎲</div>
+      <h4>Log Simulator</h4>
+      <p>6 log sources × 5 agents; attack vs. benign controlled by ratio parameter</p>
+    </div>
+    <div class="arch-box">
+      <div class="icon">📊</div>
+      <h4>Dashboard</h4>
+      <p>7 pages, 15+ Plotly charts, HTML severity badges, analyst triage forms</p>
+    </div>
+    <div class="arch-box">
+      <div class="icon">🎯</div>
+      <h4>MITRE Mapping</h4>
+      <p>Every alert carries a ATT&amp;CK technique ID; sunburst coverage chart</p>
+    </div>
+  </div>
+
+
+  
+  <h2>4. Technology Stack</h2>
+  <table>
+    <thead><tr><th>Component</th><th>Library / Tool</th><th>Version</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>UI Framework</td><td><code>streamlit</code></td><td>1.66+</td><td>Multi-page web dashboard, widgets, session state</td></tr>
+      <tr><td>Charts</td><td><code>plotly.graph_objects</code></td><td>7.1+</td><td>Area, bar, pie, heatmap, sunburst — pure Python lists, no pandas</td></tr>
+      <tr><td>Fake Data</td><td><code>faker</code></td><td>any</td><td>Realistic usernames, hostnames in simulated logs</td></tr>
+      <tr><td>Database</td><td><code>sqlite3</code> (stdlib)</td><td>built-in</td><td>Persistent log &amp; alert storage, WAL concurrent access</td></tr>
+      <tr><td>Regex Engine</td><td><code>re</code> (stdlib)</td><td>built-in</td><td>Alert rule pattern matching, REGEXP user function</td></tr>
+      <tr><td>Concurrency</td><td><code>threading</code> (stdlib)</td><td>built-in</td><td>Background simulation daemon thread + Lock</td></tr>
+      <tr><td>Timing</td><td><code>time</code> (stdlib)</td><td>built-in</td><td>Monotonic clock for brute-force rolling window</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>Dependency Note:</strong> <code>plotly.express</code> was intentionally
+    excluded because it converts data to a pandas DataFrame internally. Since pandas
+    requires <code>pyarrow</code> (a native DLL blocked by Application Control policies
+    on this machine), all charts use <code>plotly.graph_objects</code> directly, which
+    accepts raw Python lists with no native dependencies.
+  </div>
+
+
+  
+  <h2>5. Core Modules &amp; Implementation</h2>
+
+  <h3>5.1 Log Simulation Engine</h3>
+  <p>Six independent generator functions produce realistic log lines for each source:</p>
+  <table>
+    <thead><tr><th>Function</th><th>Log Source</th><th>What it generates</th><th>Attack Scenario</th></tr></thead>
+    <tbody>
+      <tr><td><code>_gen_ssh()</code></td><td><code>sshd</code></td><td>SSH login/failure (OpenSSH format)</td><td>Brute-force, root login attempt</td></tr>
+      <tr><td><code>_gen_apache()</code></td><td><code>apache</code></td><td>HTTP access log (CLF format)</td><td>SQL injection payloads in GET params</td></tr>
+      <tr><td><code>_gen_iptables()</code></td><td><code>iptables</code></td><td>Netfilter kernel log</td><td>Port scan, reverse shell, exfiltration, REJECT</td></tr>
+      <tr><td><code>_gen_sudo()</code></td><td><code>sudo</code></td><td>sudo syslog line</td><td>Root shell, shadow file modification</td></tr>
+      <tr><td><code>_gen_useradd()</code></td><td><code>useradd</code></td><td>useradd syslog entry</td><td>Persistence via new account</td></tr>
+      <tr><td><code>_gen_fileaccess()</code></td><td><code>auditd</code></td><td>Linux Audit syscall record</td><td>Read /etc/shadow, write /tmp executable</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Each agent is mapped to a subset of generators appropriate to its role
+    (e.g., <code>firewall-01</code> only produces iptables logs).
+    The <code>attack_ratio</code> parameter (0–1) controls what fraction of generated
+    logs contain attack patterns.
+  </p>
+
+  <h3>5.2 Stateful SSH Brute-Force Detection</h3>
+  <p>
+    A key engineering challenge in SIEM correlation is <em>stateful</em> rules — alerts
+    that should only fire when a pattern is repeated above a threshold, not on every
+    individual event. Rule R001 (SSH Brute Force) demonstrates this:
+  </p>
+  <div class="callout">
+    <strong>Design:</strong> An in-memory dictionary maps each source IP to a list of
+    <code>time.monotonic()</code> timestamps for recent SSH failures. On each new failure,
+    timestamps older than 60 seconds are pruned, the new timestamp is appended, and the
+    alert fires only when the bucket length reaches ≥ 3. The dictionary is protected by
+    a <code>threading.Lock</code> to handle concurrent writes from the background thread.
+  </div>
+
+  <h3>5.3 Ingestion Pipeline</h3>
+  <p>
+    <code>ingest_logs()</code> processes each log dict in a single SQLite transaction:
+    (1) INSERT the raw log row, (2) UPDATE the agent's <code>last_seen</code> and
+    <code>log_count</code>, (3) call <code>_run_rules()</code> which evaluates all 12
+    rules and INSERTs any matching alert rows. All three operations are atomic — a partial
+    failure cannot leave orphaned alerts without their triggering logs.
+  </p>
+
+
+  
+  <h2>6. Alert Rules Engine &amp; MITRE ATT&amp;CK Mapping</h2>
+  <p>
+    The engine implements 12 detection rules across five threat categories.
+    Each rule specifies a <code>log_source</code> filter (so the regex is only evaluated
+    against relevant log types), a regex <code>pattern</code>, a <code>severity</code>,
+    and a MITRE ATT&amp;CK technique ID. One rule (<em>SSH Brute Force</em>) is additionally
+    marked <code>stateful: True</code> which routes it through the threshold tracker.
+  </p>
+
+  <table>
+    <thead><tr><th>ID</th><th>Rule Name</th><th>Source</th><th>Severity</th><th>MITRE ID</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td>R001</td><td>SSH Brute Force</td><td><code>sshd</code></td><td><span class="sev sev-HIGH">HIGH</span></td><td>T1110.001</td><td>Stateful ≥3/60s</td></tr>
+      <tr><td>R002</td><td>Root Login Attempt</td><td><code>sshd</code></td><td><span class="sev sev-CRITICAL">CRITICAL</span></td><td>T1078.003</td><td>Stateless</td></tr>
+      <tr><td>R003</td><td>SQL Injection Attempt</td><td><code>apache</code></td><td><span class="sev sev-CRITICAL">CRITICAL</span></td><td>T1190</td><td>Stateless</td></tr>
+      <tr><td>R004</td><td>Port Scan Detected</td><td><code>iptables</code></td><td><span class="sev sev-HIGH">HIGH</span></td><td>T1046</td><td>Stateless</td></tr>
+      <tr><td>R005</td><td>Privilege Escalation via sudo</td><td><code>sudo</code></td><td><span class="sev sev-MEDIUM">MEDIUM</span></td><td>T1548.003</td><td>Stateless</td></tr>
+      <tr><td>R006</td><td>Reverse Shell / C2 Pattern</td><td><code>iptables</code></td><td><span class="sev sev-CRITICAL">CRITICAL</span></td><td>T1059</td><td>Stateless</td></tr>
+      <tr><td>R007</td><td>Web Directory Enumeration</td><td><code>apache</code></td><td><span class="sev sev-MEDIUM">MEDIUM</span></td><td>T1595.003</td><td>Stateless</td></tr>
+      <tr><td>R008</td><td>New User Account Created</td><td><code>useradd</code></td><td><span class="sev sev-MEDIUM">MEDIUM</span></td><td>T1136.001</td><td>Stateless</td></tr>
+      <tr><td>R009</td><td>Large Data Exfiltration</td><td><code>iptables</code></td><td><span class="sev sev-HIGH">HIGH</span></td><td>T1030</td><td>Stateless</td></tr>
+      <tr><td>R010</td><td>Firewall REJECT Triggered</td><td><code>iptables</code></td><td><span class="sev sev-HIGH">HIGH</span></td><td>T1562.004</td><td>Stateless</td></tr>
+      <tr><td>R011</td><td>Sensitive File Access</td><td><code>auditd</code></td><td><span class="sev sev-HIGH">HIGH</span></td><td>T1003.008</td><td>Stateless</td></tr>
+      <tr><td>R012</td><td>Executable Written to /tmp</td><td><code>auditd</code></td><td><span class="sev sev-CRITICAL">CRITICAL</span></td><td>T1059</td><td>Stateless</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Severity distribution across rules</h4>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="num" style="color:#e63946">3</div><div class="lbl">CRITICAL rules</div></div>
+    <div class="kpi"><div class="num" style="color:#f4a261">5</div><div class="lbl">HIGH rules</div></div>
+    <div class="kpi"><div class="num" style="color:#c9912a">3</div><div class="lbl">MEDIUM rules</div></div>
+    <div class="kpi"><div class="num" style="color:#2a9d8f">1</div><div class="lbl">STATEFUL rule</div></div>
+  </div>
+
+
+  
+  <h2>7. Dashboard Pages</h2>
+  <div class="pages-list">
+    <div class="page-card">
+      <div class="pg-icon">📊</div>
+      <div class="pg-name">Dashboard</div>
+      <div class="pg-desc">7-column KPI bar with +/min deltas, log timeline overlay chart, severity donut, top-10 attacker IPs, alerts-by-rule breakdown, and a 5-tab severity-categorised live alerts table.</div>
+    </div>
+    <div class="page-card">
+      <div class="pg-icon">🔔</div>
+      <div class="pg-name">Alert Management</div>
+      <div class="pg-desc">Filterable alert listing with per-alert expanders. Analysts can update status (OPEN → ACKNOWLEDGED → RESOLVED → FALSE_POSITIVE) and add triage notes.</div>
+    </div>
+    <div class="page-card">
+      <div class="pg-icon">🔍</div>
+      <div class="pg-name">Log Search</div>
+      <div class="pg-desc">Full-text regex search via a custom SQLite REGEXP user function. Filters: log source, severity, agent. Results rendered in a colour-coded HTML table.</div>
+    </div>
+    <div class="page-card">
+      <div class="pg-icon">🖥️</div>
+      <div class="pg-name">Agent Management</div>
+      <div class="pg-desc">Per-agent cards with OS, log count, last-seen, and an alert-severity bar chart. Full agent × log-source heatmap at the bottom.</div>
+    </div>
+    <div class="page-card">
+      <div class="pg-icon">📋</div>
+      <div class="pg-name">Detection Rules</div>
+      <div class="pg-desc">All 12 rules listed by severity (CRITICAL first). Each card shows description, MITRE ID, regex pattern in a code block, and live hit count from the database.</div>
+    </div>
+    <div class="page-card">
+      <div class="pg-icon">🎯</div>
+      <div class="pg-name">MITRE ATT&amp;CK</div>
+      <div class="pg-desc">Interactive Sunburst chart mapping technique IDs to rule names, sized by alert count. Followed by a tabular technique breakdown.</div>
+    </div>
+    <div class="page-card">
+      <div class="pg-icon">📈</div>
+      <div class="pg-name">Analytics</div>
+      <div class="pg-desc">Three tabs: Hourly event+alert trend (bar+line), Threat Intel top-IPs table + stacked attack timeline, Log source and agent distribution pie charts.</div>
+    </div>
+  </div>
+
+
+  
+  <h2>8. Live Mode &amp; Background Thread</h2>
+  <p>
+    Live Mode makes the dashboard behave like a real-time SOC display. When enabled via
+    the sidebar, two mechanisms work in tandem:
+  </p>
+  <ul>
+    <li>
+      <strong>Background daemon thread</strong> (<code>_bg_worker</code>) — Calls
+      <code>simulate_logs(n=15, attack_ratio=…)</code> followed by
+      <code>ingest_logs()</code> every 10 seconds. Marked <code>daemon=True</code> so
+      it terminates automatically with the process. All exceptions are swallowed to
+      prevent the daemon from crashing.
+    </li>
+    <li>
+      <strong>UI auto-refresh</strong> — The sidebar executes
+      <code>time.sleep(10); st.rerun()</code> at the end of each render cycle when
+      Live Mode is active. This causes Streamlit to re-execute the entire script,
+      pulling fresh data from SQLite and re-rendering all charts.
+    </li>
+  </ul>
+  <div class="callout warn">
+    <strong>Thread-safety:</strong> The background thread writes to SQLite using WAL
+    (Write-Ahead Logging) journal mode, which allows concurrent reads from the UI thread
+    without blocking. The SSH brute-force tracker is additionally protected by a
+    <code>threading.Lock</code> to prevent race conditions on the failure-count buckets.
+  </div>
+
+
+  
+  <h2>9. Database Design</h2>
+  <p>
+    All data is stored in a local SQLite file (<code>mini_siem.db</code>) created
+    automatically on first run. Three tables are used:
+  </p>
+
+  <h3>Table: <code>logs</code></h3>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>INTEGER PK</td><td>Auto-increment primary key</td></tr>
+      <tr><td><code>timestamp</code></td><td>TEXT (indexed)</td><td>UTC datetime of the event</td></tr>
+      <tr><td><code>agent_id</code></td><td>TEXT (indexed)</td><td>Originating agent (e.g. agent-001)</td></tr>
+      <tr><td><code>hostname</code></td><td>TEXT</td><td>Agent hostname</td></tr>
+      <tr><td><code>source_ip</code></td><td>TEXT</td><td>Originating IP address</td></tr>
+      <tr><td><code>log_source</code></td><td>TEXT (indexed)</td><td>sshd / apache / iptables / sudo / useradd / auditd</td></tr>
+      <tr><td><code>raw_log</code></td><td>TEXT</td><td>Full log line</td></tr>
+      <tr><td><code>severity</code></td><td>TEXT (indexed)</td><td>CRITICAL / HIGH / MEDIUM / LOW / INFO</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Table: <code>alerts</code></h3>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>INTEGER PK</td><td>Auto-increment primary key</td></tr>
+      <tr><td><code>rule_id</code></td><td>TEXT (indexed)</td><td>Rule identifier (R001–R012)</td></tr>
+      <tr><td><code>severity</code></td><td>TEXT (indexed)</td><td>Alert severity level</td></tr>
+      <tr><td><code>status</code></td><td>TEXT (indexed)</td><td>OPEN / ACKNOWLEDGED / RESOLVED / FALSE_POSITIVE</td></tr>
+      <tr><td><code>mitre_tactic</code></td><td>TEXT</td><td>MITRE ATT&amp;CK technique ID</td></tr>
+      <tr><td><code>raw_log</code></td><td>TEXT</td><td>Triggering log excerpt (max 500 chars)</td></tr>
+      <tr><td><code>analyst_note</code></td><td>TEXT</td><td>Free-text triage note added by the analyst</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Table: <code>agents</code></h3>
+  <p>
+    One row per monitored host. Stores hostname, OS, role, IP, status, last-seen
+    timestamp, and a running log count. Seeded from <code>AGENT_PROFILES</code> on
+    first run; <code>log_count</code> is incremented atomically within each ingestion
+    transaction.
+  </p>
+
+
+  
+  <h2>10. Testing &amp; Validation</h2>
+  <p>
+    A separate headless test script (<code>test_siem.py</code>) was written to validate
+    all core logic without launching the Streamlit UI. It stubs out the
+    <code>streamlit</code> module with a no-op mock and exercises the backend directly.
+  </p>
+
+  <div style="border:1.5px solid #e5e7eb;border-radius:8px;overflow:hidden;margin:16px 0 24px">
+    <div class="test-row"><span class="test-num">1</span><span class="test-pass">✔</span><span>Module import — all dependencies load without errors</span></div>
+    <div class="test-row"><span class="test-num">2</span><span class="test-pass">✔</span><span><code>init_db()</code> — creates all 3 tables and seeds 5 agents</span></div>
+    <div class="test-row"><span class="test-num">3</span><span class="test-pass">✔</span><span><code>simulate_logs(n=80)</code> — all 6 log sources present in output</span></div>
+    <div class="test-row"><span class="test-num">4</span><span class="test-pass">✔</span><span><code>ingest_logs()</code> — exactly 80 rows persisted to SQLite</span></div>
+    <div class="test-row"><span class="test-num">5</span><span class="test-pass">✔</span><span>SSH brute-force threshold — no alert on 1st/2nd failure; fires on 3rd</span></div>
+    <div class="test-row"><span class="test-num">6</span><span class="test-pass">✔</span><span>File access rules R011 &amp; R012 — both fire on crafted auditd attack logs</span></div>
+    <div class="test-row"><span class="test-num">7</span><span class="test-pass">✔</span><span><code>get_stats()</code> — returns all 10 keys including rate indicators</span></div>
+    <div class="test-row"><span class="test-num">8</span><span class="test-pass">✔</span><span>Background thread — starts, ingests 1 batch, stops cleanly within 2 s</span></div>
+    <div class="test-row"><span class="test-num">9</span><span class="test-pass">✔</span><span><code>update_alert()</code> — status persisted correctly to RESOLVED</span></div>
+    <div class="test-row"><span class="test-num">10</span><span class="test-pass">✔</span><span>Rule count — exactly 12 rules defined in <code>ALERT_RULES</code></span></div>
+  </div>
+  <div class="callout good"><strong>Result: 10 / 10 tests passed.</strong> Syntax also validated with <code>python -m py_compile Hritik_Kumar_Prajapati_mini_siem.py</code> — no errors.</div>
+
+
+  
+  <h2>11. Known Limitations &amp; Future Work</h2>
+  <table>
+    <thead><tr><th>Limitation</th><th>Potential Enhancement</th></tr></thead>
+    <tbody>
+      <tr><td>Logs are synthetically generated, not ingested from real hosts</td><td>Add a UDP/TCP syslog listener or file-tail watcher to ingest live system logs</td></tr>
+      <tr><td>Brute-force tracker resets on app restart (in-memory)</td><td>Persist tracker state to a separate SQLite table between restarts</td></tr>
+      <tr><td>Single-node — no actual cluster replication</td><td>Add a Redis pub/sub layer so multiple nodes can share alert state</td></tr>
+      <tr><td>No authentication on the dashboard</td><td>Add Streamlit-Authenticator or reverse-proxy with HTTP basic auth</td></tr>
+      <tr><td>SQLite is not suited for millions of events</td><td>Replace with PostgreSQL or ClickHouse for production-scale ingestion</td></tr>
+      <tr><td>Alert rules are hardcoded in Python</td><td>Load rules from a YAML/JSON file for easy analyst customisation</td></tr>
+      <tr><td>No email / webhook alerting</td><td>Add SMTP / Slack / PagerDuty notification on CRITICAL alerts</td></tr>
+    </tbody>
+  </table>
+
+
+  
+  <h2>12. How to Run</h2>
+
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Python 3.9 or higher</li>
+    <li>Install the three required packages:</li>
+  </ul>
+  <div style="background:#0d1117;color:#58a6ff;font-family:monospace;font-size:13px;padding:14px 18px;border-radius:8px;margin:10px 0 18px">
+    pip install streamlit plotly faker
+  </div>
+
+  <h3>Launch</h3>
+  <div style="background:#0d1117;color:#58a6ff;font-family:monospace;font-size:13px;padding:14px 18px;border-radius:8px;margin:10px 0 18px">
+    streamlit run Hritik_Kumar_Prajapati_mini_siem.py
+  </div>
+  <p>The app opens automatically at <strong>http://localhost:8501</strong>.</p>
+
+  <h3>Quick Start</h3>
+  <ul>
+    <li>Click <strong>▶ Simulate &amp; Ingest Logs</strong> in the sidebar to populate the dashboard with data.</li>
+    <li>Navigate to <strong>📊 Dashboard</strong> to view KPI metrics, charts, and the live alerts table.</li>
+    <li>Enable <strong>🔄 Live Mode → ▶ Start</strong> for continuous auto-ingestion and real-time refresh.</li>
+    <li>Visit <strong>🔔 Alerts</strong> to triage alerts (Acknowledge, Resolve, mark as False Positive).</li>
+    <li>Use <strong>🔍 Log Search</strong> with regex patterns like <code>Failed password</code> or <code>UNION SELECT</code>.</li>
+    <li>Explore <strong>🎯 MITRE ATT&amp;CK</strong> for the sunburst coverage map.</li>
+  </ul>
+
+  <h3>Files Generated</h3>
+  <table>
+    <thead><tr><th>File</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>Hritik_Kumar_Prajapati_mini_siem.py</code></td><td>The complete application — single file, ~2,031 lines</td></tr>
+      <tr><td><code>mini_siem.db</code></td><td>SQLite database created automatically on first run</td></tr>
+      <tr><td><code>mini_siem.db-wal</code></td><td>SQLite WAL journal (temporary, auto-managed)</td></tr>
+      <tr><td><code>test_siem.py</code></td><td>Headless validation test suite (10 tests)</td></tr>
+    </tbody>
+  </table>
+
+
+  
+  <h2>13. Conclusion</h2>
+  <p>
+    Mini-SIEM Lab successfully demonstrates all core capabilities of an enterprise SIEM
+    system in a single, self-contained Python file. The project covers the full
+    data pipeline — from synthetic log generation through correlation and alerting to
+    an interactive analyst dashboard — while remaining accessible to anyone with
+    a Python environment and three packages.
+  </p>
+  <p>
+    Key engineering achievements include: a thread-safe stateful brute-force detection
+    rule using a rolling time window; a background daemon thread for continuous ingestion
+    with graceful start/stop; a zero-pandas Plotly chart layer compatible with restricted
+    execution environments; and a fully indexed SQLite schema with WAL concurrency.
+  </p>
+  <p>
+    The application was designed with <strong>code auditability</strong> as a first-class
+    concern — every function has a docstring, every non-trivial line has an inline comment,
+    and the layered architecture maps explicitly to real-world SIEM counterparts. This makes
+    it an effective educational tool for understanding SOC operations, log analysis, and
+    threat detection engineering.
+  </p>
+  <div class="callout good">
+    All 10 automated tests pass. The application runs with a single command:
+    <code>streamlit run Hritik_Kumar_Prajapati_mini_siem.py</code>
+  </div>
+
+</div>
+
+<div class="footer">
+  Mini-SIEM Lab  ·  Single-file Python SIEM Simulator  ·  Made with IBM Bob
+</div>
+
+</body>
+</html>
